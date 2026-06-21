@@ -1,8 +1,10 @@
 package com.mattrack.training;
 
+import com.mattrack.sport.SportType;
 import com.mattrack.user.User;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,6 +25,10 @@ public class Training {
     private LocalDate trainingDate;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "sport_type", nullable = false, length = 40)
+    private SportType sportType = SportType.JIU_JITSU;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TrainingType type;
 
@@ -32,6 +38,12 @@ public class Training {
     private Short rounds;
 
     private Short intensity;
+
+    @Column(name = "distance_km", precision = 6, scale = 2)
+    private BigDecimal distanceKm;
+
+    @Column(name = "calories_burned")
+    private Integer caloriesBurned;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -73,6 +85,14 @@ public class Training {
         this.trainingDate = trainingDate;
     }
 
+    public SportType getSportType() {
+        return sportType;
+    }
+
+    public void setSportType(SportType sportType) {
+        this.sportType = sportType;
+    }
+
     public TrainingType getType() {
         return type;
     }
@@ -103,6 +123,22 @@ public class Training {
 
     public void setIntensity(Short intensity) {
         this.intensity = intensity;
+    }
+
+    public BigDecimal getDistanceKm() {
+        return distanceKm;
+    }
+
+    public void setDistanceKm(BigDecimal distanceKm) {
+        this.distanceKm = distanceKm;
+    }
+
+    public Integer getCaloriesBurned() {
+        return caloriesBurned;
+    }
+
+    public void setCaloriesBurned(Integer caloriesBurned) {
+        this.caloriesBurned = caloriesBurned;
     }
 
     public String getNotes() {

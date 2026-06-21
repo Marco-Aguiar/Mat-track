@@ -1,8 +1,8 @@
 package com.mattrack.auth.dto;
 
+import com.mattrack.sport.SportType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
@@ -12,6 +12,7 @@ public record RegisterRequest(
         @NotBlank String password,
         String belt,
         BigDecimal weight,
-        String academy
+        String academy,
+        SportType primarySport
 ) {
 }

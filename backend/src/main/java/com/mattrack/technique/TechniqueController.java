@@ -1,5 +1,6 @@
 package com.mattrack.technique;
 
+import com.mattrack.sport.SportType;
 import com.mattrack.technique.dto.TechniqueRequest;
 import com.mattrack.technique.dto.TechniqueResponse;
 import jakarta.validation.Valid;
@@ -27,9 +28,10 @@ public class TechniqueController {
 
     @GetMapping
     public List<TechniqueResponse> findAll(
+            @RequestParam(required = false) SportType sportType,
             @RequestParam(required = false) TechniqueCategory category
     ) {
-        return techniqueService.findAll(category);
+        return techniqueService.findAll(sportType, category);
     }
 
     @GetMapping("/{id}")

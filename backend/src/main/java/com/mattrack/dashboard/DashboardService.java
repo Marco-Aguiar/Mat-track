@@ -1,6 +1,7 @@
 package com.mattrack.dashboard;
 
 import com.mattrack.dashboard.dto.*;
+import com.mattrack.sport.SportType;
 import com.mattrack.technique.TechniqueCategory;
 import com.mattrack.training.Training;
 import com.mattrack.training.TrainingRepository;
@@ -38,7 +39,7 @@ public class DashboardService {
     }
 
     @Transactional(readOnly = true)
-    public DashboardSummaryResponse getSummary(String email) {
+    public DashboardSummaryResponse getSummary(String email, SportType sportType) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -46,17 +47,20 @@ public class DashboardService {
         LocalDate monthStart = today.withDayOfMonth(1);
         LocalDate monthEnd = today.with(TemporalAdjusters.lastDayOfMonth());
 
-        long totalTrainings = trainingRepository.countAllByUserEmail(email);
-        long trainingsThisMonth = trainingRepository.countByUserEmailAndTrainingDateBetween(
+        long totalTrainings = trainingRepository.countAllByUserEmailAndOptionalSportType(email, sportType);
+        long trainingsThisMonth = trainingRepository.countByUserEmailAndTrainingDateBetweenAndOptionalSportType(
                 email,
                 monthStart,
-                monthEnd
+                monthEnd,
+                sportType
         );
 
-        long totalMinutes = safeLong(trainingRepository.sumDurationMinutesByUserEmail(email));
-        long totalRounds = safeLong(trainingRepository.sumRoundsByUserEmail(email));
-        double averageIntensity = roundOneDecimal(trainingRepository.averageIntensityByUserEmail(email));
+        long totalMinutes = safeLong(trainingRepository.sumDurationMinutesByUserEmailAndOptionalSportType(email, sportType));
+        long totalRounds = safeLong(trainingRepository.sumRoundsByUserEmailAndOptionalSportType(email, sportType));
+        double averageIntensity = roundOneDecimal(trainingRepository.averageIntensityByUserEmailAndOptionalSportType(email, sportType));
         double totalHours = roundOneDecimal(totalMinutes / 60.0);
+        BigDecimal totalDistanceKm = safeBigDecimal(trainingRepository.sumDistanceKmByUserEmailAndOptionalSportType(email, sportType));
+        long totalCaloriesBurned = safeLong(trainingRepository.sumCaloriesBurnedByUserEmailAndOptionalSportType(email, sportType));
 
         return new DashboardSummaryResponse(
                 totalTrainings,
@@ -65,21 +69,24 @@ public class DashboardService {
                 totalHours,
                 totalRounds,
                 averageIntensity,
+                totalDistanceKm,
+                totalCaloriesBurned,
                 user.getWeight()
         );
     }
 
     @Transactional(readOnly = true)
-    public List<WeeklyTrainingResponse> getWeeklyTrainings(String email) {
+    public List<WeeklyTrainingResponse> getWeeklyTrainings(String email, SportType sportType) {
         LocalDate today = LocalDate.now();
         LocalDate start = today.minusWeeks(7).with(DayOfWeek.MONDAY);
         LocalDate end = today.with(DayOfWeek.SUNDAY);
 
         List<Training> trainings = trainingRepository
-                .findAllByUserEmailAndTrainingDateBetweenOrderByTrainingDateAsc(
+                .findAllByUserEmailAndDateBetweenAndOptionalSportType(
                         email,
                         start,
-                        end
+                        end,
+                        sportType
                 );
 
         Map<LocalDate, WeeklyAccumulator> groupedByWeek = new LinkedHashMap<>();
@@ -115,27 +122,29 @@ public class DashboardService {
     }
 
     @Transactional(readOnly = true)
-    public List<MostTrainedTechniqueResponse> getMostTrainedTechniques(String email) {
+    public List<MostTrainedTechniqueResponse> getMostTrainedTechniques(String email, SportType sportType) {
         return trainingTechniqueRepository
-                .findMostTrainedTechniquesByUserEmail(email)
+                .findMostTrainedTechniquesByUserEmailAndOptionalSportType(email, sportType)
                 .stream()
                 .map(row -> new MostTrainedTechniqueResponse(
                         (UUID) row[0],
                         (String) row[1],
-                        (TechniqueCategory) row[2],
-                        ((Number) row[3]).longValue()
+                        (SportType) row[2],
+                        (TechniqueCategory) row[3],
+                        ((Number) row[4]).longValue()
                 ))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<TechniqueCategorySummaryResponse> getTechniquesByCategory(String email) {
+    public List<TechniqueCategorySummaryResponse> getTechniquesByCategory(String email, SportType sportType) {
         return trainingTechniqueRepository
-                .countTechniquesByCategoryByUserEmail(email)
+                .countTechniquesByCategoryByUserEmailAndOptionalSportType(email, sportType)
                 .stream()
                 .map(row -> new TechniqueCategorySummaryResponse(
-                        (TechniqueCategory) row[0],
-                        ((Number) row[1]).longValue()
+                        (SportType) row[0],
+                        (TechniqueCategory) row[1],
+                        ((Number) row[2]).longValue()
                 ))
                 .toList();
     }
@@ -154,6 +163,10 @@ public class DashboardService {
 
     private long safeLong(Long value) {
         return value == null ? 0L : value;
+    }
+
+    private BigDecimal safeBigDecimal(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     private double roundOneDecimal(Double value) {

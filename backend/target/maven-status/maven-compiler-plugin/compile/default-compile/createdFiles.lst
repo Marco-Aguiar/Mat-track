@@ -1,5 +1,6 @@
 com/mattrack/training/dto/TrainingRequest.class
 com/mattrack/auth/dto/LoginRequest.class
+com/mattrack/sport/SportController.class
 com/mattrack/security/CustomUserDetailsService.class
 com/mattrack/weighthistory/dto/WeightHistoryResponse.class
 com/mattrack/technique/TechniqueNotFoundException.class
@@ -28,6 +29,7 @@ com/mattrack/training/Training.class
 com/mattrack/MattrackApiApplication.class
 com/mattrack/training/TrainingRepository.class
 com/mattrack/technique/dto/TechniqueResponse.class
+com/mattrack/sport/SportType.class
 com/mattrack/trainingtechnique/TrainingTechniqueController.class
 com/mattrack/auth/AuthController.class
 com/mattrack/weighthistory/WeightHistoryNotFoundException.class

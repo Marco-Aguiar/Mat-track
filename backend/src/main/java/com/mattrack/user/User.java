@@ -1,5 +1,6 @@
 package com.mattrack.user;
 
+import com.mattrack.sport.SportType;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,6 +28,10 @@ public class User {
     private BigDecimal weight;
 
     private String academy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "primary_sport", nullable = false, length = 40)
+    private SportType primarySport = SportType.JIU_JITSU;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -85,6 +90,14 @@ public class User {
 
     public void setAcademy(String academy) {
         this.academy = academy;
+    }
+
+    public SportType getPrimarySport() {
+        return primarySport;
+    }
+
+    public void setPrimarySport(SportType primarySport) {
+        this.primarySport = primarySport;
     }
 
     public Role getRole() {

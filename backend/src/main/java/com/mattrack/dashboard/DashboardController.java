@@ -1,6 +1,7 @@
 package com.mattrack.dashboard;
 
 import com.mattrack.dashboard.dto.*;
+import com.mattrack.sport.SportType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,23 +18,35 @@ public class DashboardController {
     }
 
     @GetMapping("/summary")
-    public DashboardSummaryResponse getSummary(Authentication authentication) {
-        return dashboardService.getSummary(authentication.getName());
+    public DashboardSummaryResponse getSummary(
+            Authentication authentication,
+            @RequestParam(required = false) SportType sportType
+    ) {
+        return dashboardService.getSummary(authentication.getName(), sportType);
     }
 
     @GetMapping("/weekly-trainings")
-    public List<WeeklyTrainingResponse> getWeeklyTrainings(Authentication authentication) {
-        return dashboardService.getWeeklyTrainings(authentication.getName());
+    public List<WeeklyTrainingResponse> getWeeklyTrainings(
+            Authentication authentication,
+            @RequestParam(required = false) SportType sportType
+    ) {
+        return dashboardService.getWeeklyTrainings(authentication.getName(), sportType);
     }
 
     @GetMapping("/most-trained-techniques")
-    public List<MostTrainedTechniqueResponse> getMostTrainedTechniques(Authentication authentication) {
-        return dashboardService.getMostTrainedTechniques(authentication.getName());
+    public List<MostTrainedTechniqueResponse> getMostTrainedTechniques(
+            Authentication authentication,
+            @RequestParam(required = false) SportType sportType
+    ) {
+        return dashboardService.getMostTrainedTechniques(authentication.getName(), sportType);
     }
 
     @GetMapping("/techniques-by-category")
-    public List<TechniqueCategorySummaryResponse> getTechniquesByCategory(Authentication authentication) {
-        return dashboardService.getTechniquesByCategory(authentication.getName());
+    public List<TechniqueCategorySummaryResponse> getTechniquesByCategory(
+            Authentication authentication,
+            @RequestParam(required = false) SportType sportType
+    ) {
+        return dashboardService.getTechniquesByCategory(authentication.getName(), sportType);
     }
 
     @GetMapping("/weight-progress")

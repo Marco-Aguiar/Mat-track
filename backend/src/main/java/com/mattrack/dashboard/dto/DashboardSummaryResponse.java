@@ -9,6 +9,8 @@ public record DashboardSummaryResponse(
         double totalTrainingHours,
         long totalRounds,
         double averageIntensity,
+        BigDecimal totalDistanceKm,
+        long totalCaloriesBurned,
         BigDecimal currentWeightKg
 ) {
 }

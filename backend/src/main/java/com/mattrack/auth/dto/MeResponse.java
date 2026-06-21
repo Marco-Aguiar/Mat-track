@@ -1,5 +1,6 @@
 package com.mattrack.auth.dto;
 
+import com.mattrack.sport.SportType;
 import com.mattrack.user.Role;
 
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ public record MeResponse(
         String belt,
         BigDecimal weight,
         String academy,
+        SportType primarySport,
         Role role
 ) {
 }

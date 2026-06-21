@@ -43,6 +43,8 @@ public class TrainingTechniqueService {
         Technique technique = techniqueRepository.findById(request.techniqueId())
                 .orElseThrow(TechniqueNotFoundException::new);
 
+        validateSameSportType(training, technique);
+
         boolean alreadyLinked = trainingTechniqueRepository
                 .existsByTraining_IdAndTechnique_Id(trainingId, request.techniqueId());
 
@@ -50,11 +52,8 @@ public class TrainingTechniqueService {
             throw new IllegalArgumentException("Technique already linked to this training");
         }
 
-        TrainingTechnique trainingTechnique = new TrainingTechnique(
-                training,
-                technique,
-                request.note()
-        );
+        TrainingTechnique trainingTechnique = new TrainingTechnique(training, technique);
+        applyFields(trainingTechnique, request.sets(), request.reps(), request.loadKg(), request.distanceKm(), request.durationSeconds(), request.note());
 
         return toResponse(trainingTechniqueRepository.save(trainingTechnique));
     }
@@ -86,7 +85,7 @@ public class TrainingTechniqueService {
                 .findByTraining_IdAndTechnique_Id(trainingId, techniqueId)
                 .orElseThrow(TrainingTechniqueNotFoundException::new);
 
-        trainingTechnique.setNote(request.note());
+        applyFields(trainingTechnique, request.sets(), request.reps(), request.loadKg(), request.distanceKm(), request.durationSeconds(), request.note());
 
         return toResponse(trainingTechniqueRepository.save(trainingTechnique));
     }
@@ -111,14 +110,43 @@ public class TrainingTechniqueService {
                 .orElseThrow(TrainingNotFoundException::new);
     }
 
+    private void validateSameSportType(Training training, Technique technique) {
+        if (training.getSportType() != technique.getSportType()) {
+            throw new IllegalArgumentException("Technique sport type must match training sport type");
+        }
+    }
+
+    private void applyFields(
+            TrainingTechnique trainingTechnique,
+            Short sets,
+            Short reps,
+            java.math.BigDecimal loadKg,
+            java.math.BigDecimal distanceKm,
+            Integer durationSeconds,
+            String note
+    ) {
+        trainingTechnique.setSets(sets);
+        trainingTechnique.setReps(reps);
+        trainingTechnique.setLoadKg(loadKg);
+        trainingTechnique.setDistanceKm(distanceKm);
+        trainingTechnique.setDurationSeconds(durationSeconds);
+        trainingTechnique.setNote(note);
+    }
+
     private TrainingTechniqueResponse toResponse(TrainingTechnique trainingTechnique) {
         Technique technique = trainingTechnique.getTechnique();
 
         return new TrainingTechniqueResponse(
                 technique.getId(),
                 technique.getName(),
+                technique.getSportType(),
                 technique.getCategory(),
                 technique.getDescription(),
+                trainingTechnique.getSets(),
+                trainingTechnique.getReps(),
+                trainingTechnique.getLoadKg(),
+                trainingTechnique.getDistanceKm(),
+                trainingTechnique.getDurationSeconds(),
                 trainingTechnique.getNote()
         );
     }

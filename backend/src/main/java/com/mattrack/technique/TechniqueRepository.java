@@ -1,5 +1,6 @@
 package com.mattrack.technique;
 
+import com.mattrack.sport.SportType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -10,9 +11,13 @@ public interface TechniqueRepository extends JpaRepository<Technique, UUID> {
 
     List<Technique> findAllByOrderByNameAsc();
 
+    List<Technique> findAllBySportTypeOrderByNameAsc(SportType sportType);
+
     List<Technique> findAllByCategoryOrderByNameAsc(TechniqueCategory category);
 
-    boolean existsByNameIgnoreCase(String name);
+    List<Technique> findAllBySportTypeAndCategoryOrderByNameAsc(SportType sportType, TechniqueCategory category);
 
-    Optional<Technique> findByNameIgnoreCase(String name);
+    boolean existsByNameIgnoreCaseAndSportType(String name, SportType sportType);
+
+    Optional<Technique> findByNameIgnoreCaseAndSportType(String name, SportType sportType);
 }

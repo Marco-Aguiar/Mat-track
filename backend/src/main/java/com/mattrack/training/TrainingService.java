@@ -1,5 +1,6 @@
 package com.mattrack.training;
 
+import com.mattrack.sport.SportType;
 import com.mattrack.training.dto.TrainingRequest;
 import com.mattrack.training.dto.TrainingResponse;
 import com.mattrack.user.User;
@@ -37,9 +38,12 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<TrainingResponse> findAll(String email) {
-        return trainingRepository
-                .findAllByUserEmailOrderByTrainingDateDesc(email)
+    public List<TrainingResponse> findAll(String email, SportType sportType) {
+        List<Training> trainings = sportType == null
+                ? trainingRepository.findAllByUserEmailOrderByTrainingDateDesc(email)
+                : trainingRepository.findAllByUserEmailAndSportTypeOrderByTrainingDateDesc(email, sportType);
+
+        return trainings
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -74,22 +78,42 @@ public class TrainingService {
     }
 
     private void updateFields(Training training, TrainingRequest request) {
+        SportType resolvedSportType = resolveSportType(request);
+
         training.setTrainingDate(request.trainingDate());
+        training.setSportType(resolvedSportType);
         training.setType(request.type());
         training.setDurationMinutes(request.durationMinutes());
         training.setRounds(request.rounds());
         training.setIntensity(request.intensity());
+        training.setDistanceKm(request.distanceKm());
+        training.setCaloriesBurned(request.caloriesBurned());
         training.setNotes(request.notes());
+    }
+
+    private SportType resolveSportType(TrainingRequest request) {
+        SportType resolvedSportType = request.sportType() == null
+                ? request.type().getSportType()
+                : request.sportType();
+
+        if (!request.type().belongsTo(resolvedSportType)) {
+            throw new IllegalArgumentException("Training type " + request.type() + " does not belong to sport type " + resolvedSportType);
+        }
+
+        return resolvedSportType;
     }
 
     private TrainingResponse toResponse(Training training) {
         return new TrainingResponse(
                 training.getId(),
                 training.getTrainingDate(),
+                training.getSportType(),
                 training.getType(),
                 training.getDurationMinutes(),
                 training.getRounds(),
                 training.getIntensity(),
+                training.getDistanceKm(),
+                training.getCaloriesBurned(),
                 training.getNotes(),
                 training.getCreatedAt(),
                 training.getUpdatedAt()

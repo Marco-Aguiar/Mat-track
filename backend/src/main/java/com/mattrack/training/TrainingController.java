@@ -1,5 +1,6 @@
 package com.mattrack.training;
 
+import com.mattrack.sport.SportType;
 import com.mattrack.training.dto.TrainingRequest;
 import com.mattrack.training.dto.TrainingResponse;
 import jakarta.validation.Valid;
@@ -30,8 +31,11 @@ public class TrainingController {
     }
 
     @GetMapping
-    public List<TrainingResponse> findAll(Authentication authentication) {
-        return trainingService.findAll(authentication.getName());
+    public List<TrainingResponse> findAll(
+            Authentication authentication,
+            @RequestParam(required = false) SportType sportType
+    ) {
+        return trainingService.findAll(authentication.getName(), sportType);
     }
 
     @GetMapping("/{id}")

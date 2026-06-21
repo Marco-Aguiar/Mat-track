@@ -5,6 +5,7 @@ import com.mattrack.auth.dto.LoginRequest;
 import com.mattrack.auth.dto.MeResponse;
 import com.mattrack.auth.dto.RegisterRequest;
 import com.mattrack.security.JwtService;
+import com.mattrack.sport.SportType;
 import com.mattrack.user.User;
 import com.mattrack.user.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -44,6 +45,7 @@ public class AuthService {
         user.setBelt(request.belt());
         user.setWeight(request.weight());
         user.setAcademy(request.academy());
+        user.setPrimarySport(request.primarySport() == null ? SportType.JIU_JITSU : request.primarySport());
 
         userRepository.save(user);
 
@@ -76,6 +78,7 @@ public class AuthService {
                 user.getBelt(),
                 user.getWeight(),
                 user.getAcademy(),
+                user.getPrimarySport(),
                 user.getRole()
         );
     }

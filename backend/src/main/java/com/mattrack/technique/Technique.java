@@ -1,5 +1,6 @@
 package com.mattrack.technique;
 
+import com.mattrack.sport.SportType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,10 @@ public class Technique {
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "sport_type", nullable = false, length = 40)
+    private SportType sportType = SportType.JIU_JITSU;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
     private TechniqueCategory category;
 
@@ -26,9 +31,18 @@ public class Technique {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     @PrePersist
     void prePersist() {
         createdAt = LocalDateTime.now();
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public UUID getId() {
@@ -41,6 +55,14 @@ public class Technique {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public SportType getSportType() {
+        return sportType;
+    }
+
+    public void setSportType(SportType sportType) {
+        this.sportType = sportType;
     }
 
     public TechniqueCategory getCategory() {
@@ -61,5 +83,9 @@ public class Technique {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }
