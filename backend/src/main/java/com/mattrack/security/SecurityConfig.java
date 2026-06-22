@@ -29,7 +29,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService userDetailsService;
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,https://mat-track-ui.vercel.app}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,https://mattrack-ui.vercel.app}")
     private String allowedOrigins;
 
     public SecurityConfig(
