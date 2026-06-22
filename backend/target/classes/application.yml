@@ -16,9 +16,11 @@ spring:
     enabled: true
 
   data:
-  redis:
-    url: ${REDIS_URL:redis://localhost:6379}
-    timeout: 5s
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      timeout: 5s
+      repositories:
+        enabled: false
 
 server:
   port: ${PORT:8080}
