@@ -4,6 +4,7 @@ import com.mattrack.auth.dto.AuthResponse;
 import com.mattrack.auth.dto.LoginRequest;
 import com.mattrack.auth.dto.MeResponse;
 import com.mattrack.auth.dto.RegisterRequest;
+import com.mattrack.auth.dto.UpdateProfileRequest;
 import com.mattrack.security.JwtService;
 import com.mattrack.sport.SportType;
 import com.mattrack.user.User;
@@ -12,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -71,6 +73,34 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        return toMeResponse(user);
+    }
+
+    @Transactional
+    public MeResponse updateProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (request.name() != null && !request.name().isBlank()) {
+            user.setName(request.name());
+        }
+        if (request.belt() != null) {
+            user.setBelt(request.belt());
+        }
+        if (request.academy() != null) {
+            user.setAcademy(request.academy());
+        }
+        if (request.weight() != null) {
+            user.setWeight(request.weight());
+        }
+        if (request.primarySport() != null) {
+            user.setPrimarySport(request.primarySport());
+        }
+
+        return toMeResponse(userRepository.save(user));
+    }
+
+    private MeResponse toMeResponse(User user) {
         return new MeResponse(
                 user.getId(),
                 user.getName(),

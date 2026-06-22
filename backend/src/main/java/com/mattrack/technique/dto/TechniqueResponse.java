@@ -12,6 +12,7 @@ public record TechniqueResponse(
         SportType sportType,
         TechniqueCategory category,
         String description,
+        boolean owned,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

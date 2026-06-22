@@ -1,13 +1,18 @@
 package com.mattrack.weighthistory;
 
+import com.mattrack.common.PageResponse;
+import com.mattrack.config.CacheConfig;
 import com.mattrack.user.User;
 import com.mattrack.user.UserRepository;
 import com.mattrack.weighthistory.dto.WeightHistoryRequest;
 import com.mattrack.weighthistory.dto.WeightHistoryResponse;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,6 +29,10 @@ public class WeightHistoryService {
         this.userRepository = userRepository;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.DASHBOARD_SUMMARY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_WEIGHT, allEntries = true)
+    })
     @Transactional
     public WeightHistoryResponse create(String email, WeightHistoryRequest request) {
         User user = findUser(email);
@@ -45,12 +54,12 @@ public class WeightHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<WeightHistoryResponse> findAll(String email) {
-        return weightHistoryRepository
-                .findAllByUserEmailOrderByMeasuredAtAsc(email)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public PageResponse<WeightHistoryResponse> findAll(String email, int page, int size) {
+        var pageable = PageRequest.of(page, size, Sort.by("measuredAt").ascending());
+        return PageResponse.from(
+                weightHistoryRepository.findAllByUserEmailOrderByMeasuredAtAsc(email, pageable)
+                        .map(this::toResponse)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +76,10 @@ public class WeightHistoryService {
         return toResponse(latest);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.DASHBOARD_SUMMARY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_WEIGHT, allEntries = true)
+    })
     @Transactional
     public WeightHistoryResponse update(
             String email,
@@ -91,6 +104,10 @@ public class WeightHistoryService {
         return toResponse(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.DASHBOARD_SUMMARY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_WEIGHT, allEntries = true)
+    })
     @Transactional
     public void delete(String email, UUID id) {
         User user = findUser(email);

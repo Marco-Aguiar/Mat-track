@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,4 +61,20 @@ public interface TrainingTechniqueRepository extends JpaRepository<TrainingTechn
             ORDER BY COUNT(tt) DESC
             """)
     List<Object[]> countTechniquesByCategoryByUserEmail(@Param("email") String email);
+
+    @Query("""
+            SELECT tt
+            FROM TrainingTechnique tt
+            WHERE tt.technique.id = :techniqueId
+              AND tt.training.user.email = :email
+              AND (:startDate IS NULL OR tt.training.trainingDate >= :startDate)
+              AND (:endDate   IS NULL OR tt.training.trainingDate <= :endDate)
+            ORDER BY tt.training.trainingDate ASC
+            """)
+    List<TrainingTechnique> findProgressionByTechniqueAndUser(
+            @Param("techniqueId") UUID techniqueId,
+            @Param("email") String email,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

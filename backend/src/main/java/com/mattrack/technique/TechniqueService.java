@@ -1,11 +1,19 @@
 package com.mattrack.technique;
 
+import com.mattrack.common.PageResponse;
 import com.mattrack.sport.SportType;
+import com.mattrack.technique.dto.TechniqueProgressionResponse;
 import com.mattrack.technique.dto.TechniqueRequest;
 import com.mattrack.technique.dto.TechniqueResponse;
+import com.mattrack.trainingtechnique.TrainingTechniqueRepository;
+import com.mattrack.user.User;
+import com.mattrack.user.UserRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,16 +21,25 @@ import java.util.UUID;
 public class TechniqueService {
 
     private final TechniqueRepository techniqueRepository;
+    private final UserRepository userRepository;
+    private final TrainingTechniqueRepository trainingTechniqueRepository;
 
-    public TechniqueService(TechniqueRepository techniqueRepository) {
+    public TechniqueService(
+            TechniqueRepository techniqueRepository,
+            UserRepository userRepository,
+            TrainingTechniqueRepository trainingTechniqueRepository
+    ) {
         this.techniqueRepository = techniqueRepository;
+        this.userRepository = userRepository;
+        this.trainingTechniqueRepository = trainingTechniqueRepository;
     }
 
     @Transactional
-    public TechniqueResponse create(TechniqueRequest request) {
+    public TechniqueResponse create(String email, TechniqueRequest request) {
+        User user = findUser(email);
         SportType sportType = resolveSportType(request.sportType());
 
-        if (techniqueRepository.existsByNameIgnoreCaseAndSportType(request.name(), sportType)) {
+        if (techniqueRepository.existsByNameIgnoreCaseAndSportTypeVisibleToUser(request.name(), sportType, user)) {
             throw new IllegalArgumentException("Technique already exists for sport type " + sportType);
         }
 
@@ -31,42 +48,41 @@ public class TechniqueService {
         technique.setSportType(sportType);
         technique.setCategory(request.category());
         technique.setDescription(request.description());
+        technique.setCreatedBy(user);
 
-        return toResponse(techniqueRepository.save(technique));
+        return toResponse(techniqueRepository.save(technique), user.getId());
     }
 
     @Transactional(readOnly = true)
-    public List<TechniqueResponse> findAll(SportType sportType, TechniqueCategory category) {
-        List<Technique> techniques;
+    public PageResponse<TechniqueResponse> findAll(String email, SportType sportType, TechniqueCategory category, int page, int size) {
+        User user = findUser(email);
+        var pageable = PageRequest.of(page, size, Sort.by("name").ascending());
 
-        if (sportType != null && category != null) {
-            techniques = techniqueRepository.findAllBySportTypeAndCategoryOrderByNameAsc(sportType, category);
-        } else if (sportType != null) {
-            techniques = techniqueRepository.findAllBySportTypeOrderByNameAsc(sportType);
-        } else if (category != null) {
-            techniques = techniqueRepository.findAllByCategoryOrderByNameAsc(category);
-        } else {
-            techniques = techniqueRepository.findAllByOrderByNameAsc();
-        }
+        var techniques = (sportType != null && category != null)
+                ? techniqueRepository.findVisibleByUserAndSportTypeAndCategory(user, sportType, category, pageable)
+                : (sportType != null)
+                ? techniqueRepository.findVisibleByUserAndSportType(user, sportType, pageable)
+                : (category != null)
+                ? techniqueRepository.findVisibleByUserAndCategory(user, category, pageable)
+                : techniqueRepository.findVisibleByUser(user, pageable);
 
-        return techniques
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return PageResponse.from(techniques.map(t -> toResponse(t, user.getId())));
     }
 
     @Transactional(readOnly = true)
-    public TechniqueResponse findById(UUID id) {
-        Technique technique = findTechnique(id);
-        return toResponse(technique);
+    public TechniqueResponse findById(String email, UUID id) {
+        User user = findUser(email);
+        Technique technique = findVisibleTechnique(user, id);
+        return toResponse(technique, user.getId());
     }
 
     @Transactional
-    public TechniqueResponse update(UUID id, TechniqueRequest request) {
-        Technique technique = findTechnique(id);
+    public TechniqueResponse update(String email, UUID id, TechniqueRequest request) {
+        User user = findUser(email);
+        Technique technique = findOwnedTechnique(user, id);
         SportType sportType = request.sportType() == null ? technique.getSportType() : request.sportType();
 
-        techniqueRepository.findByNameIgnoreCaseAndSportType(request.name(), sportType)
+        techniqueRepository.findByNameIgnoreCaseAndSportTypeVisibleToUser(request.name(), sportType, user)
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
                     throw new IllegalArgumentException("Technique already exists for sport type " + sportType);
@@ -77,22 +93,82 @@ public class TechniqueService {
         technique.setCategory(request.category());
         technique.setDescription(request.description());
 
-        return toResponse(techniqueRepository.save(technique));
+        return toResponse(techniqueRepository.save(technique), user.getId());
     }
 
     @Transactional
-    public void delete(UUID id) {
-        Technique technique = findTechnique(id);
+    public void delete(String email, UUID id) {
+        User user = findUser(email);
+        Technique technique = findOwnedTechnique(user, id);
         techniqueRepository.delete(technique);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TechniqueProgressionResponse> getProgression(
+            String email,
+            UUID techniqueId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        User user = findUser(email);
+        findVisibleTechnique(user, techniqueId);
+
+        return trainingTechniqueRepository
+                .findProgressionByTechniqueAndUser(techniqueId, email, startDate, endDate)
+                .stream()
+                .map(tt -> new TechniqueProgressionResponse(
+                        tt.getTraining().getTrainingDate(),
+                        tt.getTraining().getId(),
+                        tt.getSets(),
+                        tt.getReps(),
+                        tt.getLoadKg(),
+                        tt.getDistanceKm(),
+                        tt.getDurationSeconds(),
+                        tt.getNote()
+                ))
+                .toList();
+    }
+
+    private TechniqueResponse toResponse(Technique technique, UUID currentUserId) {
+        boolean owned = technique.getCreatedBy() != null
+                && technique.getCreatedBy().getId().equals(currentUserId);
+        return new TechniqueResponse(
+                technique.getId(),
+                technique.getName(),
+                technique.getSportType(),
+                technique.getCategory(),
+                technique.getDescription(),
+                owned,
+                technique.getCreatedAt(),
+                technique.getUpdatedAt()
+        );
+    }
+
+    private User findUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
     private SportType resolveSportType(SportType sportType) {
         return sportType == null ? SportType.JIU_JITSU : sportType;
     }
 
-    private Technique findTechnique(UUID id) {
-        return techniqueRepository.findById(id)
+    private Technique findVisibleTechnique(User user, UUID id) {
+        Technique technique = techniqueRepository.findById(id)
                 .orElseThrow(TechniqueNotFoundException::new);
+        if (technique.getCreatedBy() != null && !technique.getCreatedBy().getId().equals(user.getId())) {
+            throw new TechniqueNotFoundException();
+        }
+        return technique;
+    }
+
+    private Technique findOwnedTechnique(User user, UUID id) {
+        Technique technique = techniqueRepository.findById(id)
+                .orElseThrow(TechniqueNotFoundException::new);
+        if (technique.getCreatedBy() == null || !technique.getCreatedBy().getId().equals(user.getId())) {
+            throw new TechniqueNotOwnedException();
+        }
+        return technique;
     }
 
     private TechniqueResponse toResponse(Technique technique) {

@@ -4,6 +4,7 @@ import com.mattrack.auth.dto.AuthResponse;
 import com.mattrack.auth.dto.LoginRequest;
 import com.mattrack.auth.dto.MeResponse;
 import com.mattrack.auth.dto.RegisterRequest;
+import com.mattrack.auth.dto.UpdateProfileRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -31,5 +32,13 @@ public class AuthController {
     @GetMapping("/me")
     public MeResponse me(Authentication authentication) {
         return authService.me(authentication.getName());
+    }
+
+    @PatchMapping("/me")
+    public MeResponse updateProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        return authService.updateProfile(authentication.getName(), request);
     }
 }

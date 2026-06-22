@@ -1,14 +1,20 @@
 package com.mattrack.training;
 
+import com.mattrack.common.PageResponse;
+import com.mattrack.config.CacheConfig;
 import com.mattrack.sport.SportType;
 import com.mattrack.training.dto.TrainingRequest;
 import com.mattrack.training.dto.TrainingResponse;
 import com.mattrack.user.User;
 import com.mattrack.user.UserRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -25,6 +31,12 @@ public class TrainingService {
         this.userRepository = userRepository;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.DASHBOARD_SUMMARY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_WEEKLY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_TECHNIQUES, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_CATEGORIES, allEntries = true)
+    })
     @Transactional
     public TrainingResponse create(String email, TrainingRequest request) {
         User user = userRepository.findByEmail(email)
@@ -38,15 +50,30 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<TrainingResponse> findAll(String email, SportType sportType) {
-        List<Training> trainings = sportType == null
-                ? trainingRepository.findAllByUserEmailOrderByTrainingDateDesc(email)
-                : trainingRepository.findAllByUserEmailAndSportTypeOrderByTrainingDateDesc(email, sportType);
+    public PageResponse<TrainingResponse> findAll(
+            String email,
+            SportType sportType,
+            LocalDate startDate,
+            LocalDate endDate,
+            int page,
+            int size
+    ) {
+        var pageable = PageRequest.of(page, size, Sort.by("trainingDate").descending());
 
-        return trainings
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        if (startDate != null || endDate != null) {
+            LocalDate from = startDate != null ? startDate : LocalDate.of(2000, 1, 1);
+            LocalDate to   = endDate   != null ? endDate   : LocalDate.now();
+            return PageResponse.from(
+                    trainingRepository.findPageByUserEmailAndDateBetweenAndOptionalSportType(email, from, to, sportType, pageable)
+                            .map(this::toResponse)
+            );
+        }
+
+        var trainings = sportType == null
+                ? trainingRepository.findAllByUserEmailOrderByTrainingDateDesc(email, pageable)
+                : trainingRepository.findAllByUserEmailAndSportTypeOrderByTrainingDateDesc(email, sportType, pageable);
+
+        return PageResponse.from(trainings.map(this::toResponse));
     }
 
     @Transactional(readOnly = true)
@@ -54,6 +81,12 @@ public class TrainingService {
         return toResponse(findOwnedTraining(email, id));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.DASHBOARD_SUMMARY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_WEEKLY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_TECHNIQUES, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_CATEGORIES, allEntries = true)
+    })
     @Transactional
     public TrainingResponse update(
             String email,
@@ -66,6 +99,12 @@ public class TrainingService {
         return toResponse(trainingRepository.save(training));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.DASHBOARD_SUMMARY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_WEEKLY, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_TECHNIQUES, allEntries = true),
+            @CacheEvict(value = CacheConfig.DASHBOARD_CATEGORIES, allEntries = true)
+    })
     @Transactional
     public void delete(String email, UUID id) {
         Training training = findOwnedTraining(email, id);

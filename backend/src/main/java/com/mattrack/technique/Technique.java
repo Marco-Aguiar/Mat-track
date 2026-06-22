@@ -1,6 +1,7 @@
 package com.mattrack.technique;
 
 import com.mattrack.sport.SportType;
+import com.mattrack.user.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,10 @@ public class Technique {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -79,6 +84,14 @@ public class Technique {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public User getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -1,6 +1,8 @@
 package com.mattrack.training;
 
 import com.mattrack.sport.SportType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,11 +12,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 public interface TrainingRepository extends JpaRepository<Training, UUID> {
 
-    List<Training> findAllByUserEmailOrderByTrainingDateDesc(String email);
+    Page<Training> findAllByUserEmailOrderByTrainingDateDesc(String email, Pageable pageable);
 
-    List<Training> findAllByUserEmailAndSportTypeOrderByTrainingDateDesc(String email, SportType sportType);
+    Page<Training> findAllByUserEmailAndSportTypeOrderByTrainingDateDesc(String email, SportType sportType, Pageable pageable);
 
     List<Training> findAllByUserEmailAndTrainingDateBetweenOrderByTrainingDateAsc(
             String email,
@@ -43,6 +46,22 @@ public interface TrainingRepository extends JpaRepository<Training, UUID> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             @Param("sportType") SportType sportType
+    );
+
+    @Query("""
+            SELECT t
+            FROM Training t
+            WHERE t.user.email = :email
+              AND t.trainingDate BETWEEN :startDate AND :endDate
+              AND (:sportType IS NULL OR t.sportType = :sportType)
+            ORDER BY t.trainingDate DESC
+            """)
+    Page<Training> findPageByUserEmailAndDateBetweenAndOptionalSportType(
+            @Param("email") String email,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("sportType") SportType sportType,
+            Pageable pageable
     );
 
     @Query("""

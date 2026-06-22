@@ -1,5 +1,6 @@
 package com.mattrack.dashboard;
 
+import com.mattrack.config.CacheConfig;
 import com.mattrack.dashboard.dto.*;
 import com.mattrack.sport.SportType;
 import com.mattrack.technique.TechniqueCategory;
@@ -9,6 +10,7 @@ import com.mattrack.trainingtechnique.TrainingTechniqueRepository;
 import com.mattrack.user.User;
 import com.mattrack.user.UserRepository;
 import com.mattrack.weighthistory.WeightHistoryRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,7 @@ public class DashboardService {
         this.userRepository = userRepository;
     }
 
+    @Cacheable(value = CacheConfig.DASHBOARD_SUMMARY, key = "#email + ':' + #sportType")
     @Transactional(readOnly = true)
     public DashboardSummaryResponse getSummary(String email, SportType sportType) {
         User user = userRepository.findByEmail(email)
@@ -75,6 +78,7 @@ public class DashboardService {
         );
     }
 
+    @Cacheable(value = CacheConfig.DASHBOARD_WEEKLY, key = "#email + ':' + #sportType")
     @Transactional(readOnly = true)
     public List<WeeklyTrainingResponse> getWeeklyTrainings(String email, SportType sportType) {
         LocalDate today = LocalDate.now();
@@ -121,6 +125,7 @@ public class DashboardService {
                 .toList();
     }
 
+    @Cacheable(value = CacheConfig.DASHBOARD_TECHNIQUES, key = "#email + ':' + #sportType")
     @Transactional(readOnly = true)
     public List<MostTrainedTechniqueResponse> getMostTrainedTechniques(String email, SportType sportType) {
         return trainingTechniqueRepository
@@ -136,6 +141,7 @@ public class DashboardService {
                 .toList();
     }
 
+    @Cacheable(value = CacheConfig.DASHBOARD_CATEGORIES, key = "#email + ':' + #sportType")
     @Transactional(readOnly = true)
     public List<TechniqueCategorySummaryResponse> getTechniquesByCategory(String email, SportType sportType) {
         return trainingTechniqueRepository
@@ -149,6 +155,7 @@ public class DashboardService {
                 .toList();
     }
 
+    @Cacheable(value = CacheConfig.DASHBOARD_WEIGHT, key = "#email")
     @Transactional(readOnly = true)
     public List<WeightProgressResponse> getWeightProgress(String email) {
         return weightHistoryRepository

@@ -1,5 +1,6 @@
 package com.mattrack.weighthistory;
 
+import com.mattrack.common.PageResponse;
 import com.mattrack.weighthistory.dto.WeightHistoryRequest;
 import com.mattrack.weighthistory.dto.WeightHistoryResponse;
 import jakarta.validation.Valid;
@@ -7,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -30,8 +30,12 @@ public class WeightHistoryController {
     }
 
     @GetMapping
-    public List<WeightHistoryResponse> findAll(Authentication authentication) {
-        return weightHistoryService.findAll(authentication.getName());
+    public PageResponse<WeightHistoryResponse> findAll(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return weightHistoryService.findAll(authentication.getName(), page, size);
     }
 
     @GetMapping("/latest")
