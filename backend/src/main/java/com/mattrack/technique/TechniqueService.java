@@ -171,15 +171,4 @@ public class TechniqueService {
         return technique;
     }
 
-    private TechniqueResponse toResponse(Technique technique) {
-        return new TechniqueResponse(
-                technique.getId(),
-                technique.getName(),
-                technique.getSportType(),
-                technique.getCategory(),
-                technique.getDescription(),
-                technique.getCreatedAt(),
-                technique.getUpdatedAt()
-        );
-    }
 }
